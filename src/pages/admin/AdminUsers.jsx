@@ -163,92 +163,155 @@ export default function AdminUsers() {
         {loading ? (
           <div className="admin-loading">Loading users…</div>
         ) : (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Contact</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Joined</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.length === 0 ? (
-                  <tr><td colSpan={6} className="admin-table-empty">No users found.</td></tr>
-                ) : users.map(u => (
-                  <tr key={u._id} style={isSelf(u._id) ? { background: '#fafffe' } : {}}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div className="admin-user-avatar-sm" style={{ background: ROLE_COLORS[u.role] + '33', color: ROLE_COLORS[u.role] }}>
-                          {u.name?.[0]?.toUpperCase() || '?'}
-                        </div>
-                        <div>
-                          <div className="admin-customer-name">
-                            {u.name}
-                            {isSelf(u._id) && <span style={{ fontSize: 10, color: '#10b981', fontWeight: 700, marginLeft: 6 }}>YOU</span>}
+          <>
+            {/* Desktop table */}
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Contact</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr><td colSpan={6} className="admin-table-empty">No users found.</td></tr>
+                  ) : users.map(u => (
+                    <tr key={u._id} style={isSelf(u._id) ? { background: '#fafffe' } : {}}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div className="admin-user-avatar-sm" style={{ background: ROLE_COLORS[u.role] + '33', color: ROLE_COLORS[u.role] }}>
+                            {u.name?.[0]?.toUpperCase() || '?'}
                           </div>
-                          <div style={{ fontSize: 11, color: '#9ca3af' }}>{u.email}</div>
+                          <div>
+                            <div className="admin-customer-name">
+                              {u.name}
+                              {isSelf(u._id) && <span style={{ fontSize: 10, color: '#10b981', fontWeight: 700, marginLeft: 6 }}>YOU</span>}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#9ca3af' }}>{u.email}</div>
+                          </div>
                         </div>
+                      </td>
+                      <td style={{ fontSize: 12, color: '#555' }}>{u.phone}</td>
+                      <td>
+                        <span className="admin-badge" style={{ background: ROLE_COLORS[u.role] + '20', color: ROLE_COLORS[u.role], fontWeight: 700, fontSize: 11 }}>
+                          {ROLE_LABELS[u.role]}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`admin-badge ${u.isActive ? 'badge-green' : 'badge-red'}`}>
+                          {u.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="admin-date">
+                        {new Date(u.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <button
+                            className={`admin-btn admin-btn-sm ${u.isActive ? 'admin-btn-danger' : 'admin-btn-primary'}`}
+                            onClick={() => handleToggleStatus(u)}
+                            disabled={togglingId === u._id || isSelf(u._id)}
+                          >
+                            {u.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                          {u.role !== 'superadmin' && !isSelf(u._id) && (
+                            <button
+                              className="admin-btn admin-btn-sm"
+                              onClick={() => handleRoleClick(u)}
+                              style={{
+                                background: u.role === 'user' ? '#eff6ff' : '#fff3f3',
+                                color:      u.role === 'user' ? '#3b82f6' : '#ef4444',
+                                border:     `1.5px solid ${u.role === 'user' ? '#bfdbfe' : '#fecaca'}`,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {u.role === 'user' ? 'Make Admin' : 'Remove Admin'}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="admin-mobile-cards">
+              {users.length === 0 ? (
+                <div className="admin-table-empty">No users found.</div>
+              ) : users.map(u => (
+                <div key={u._id} className="admin-mobile-card">
+                  <div className="admin-mobile-card-header">
+                    <div className="admin-user-avatar-sm" style={{ background: ROLE_COLORS[u.role] + '33', color: ROLE_COLORS[u.role] }}>
+                      {u.name?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="admin-customer-name" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        {u.name}
+                        {isSelf(u._id) && <span style={{ fontSize: 10, color: '#10b981', fontWeight: 700 }}>YOU</span>}
                       </div>
-                    </td>
-                    <td style={{ fontSize: 12, color: '#555' }}>{u.phone}</td>
-                    <td>
+                      <div style={{ fontSize: 11, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+                    </div>
+                    <span className={`admin-badge ${u.isActive ? 'badge-green' : 'badge-red'}`}>
+                      {u.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="admin-mobile-card-body">
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Phone</span>
+                      <span className="admin-mobile-value">{u.phone || '—'}</span>
+                    </div>
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Role</span>
                       <span className="admin-badge" style={{ background: ROLE_COLORS[u.role] + '20', color: ROLE_COLORS[u.role], fontWeight: 700, fontSize: 11 }}>
                         {ROLE_LABELS[u.role]}
                       </span>
-                    </td>
-                    <td>
-                      <span className={`admin-badge ${u.isActive ? 'badge-green' : 'badge-red'}`}>
-                        {u.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="admin-date">
-                      {new Date(u.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {/* Status toggle */}
-                        <button
-                          className={`admin-btn admin-btn-sm ${u.isActive ? 'admin-btn-danger' : 'admin-btn-primary'}`}
-                          onClick={() => handleToggleStatus(u)}
-                          disabled={togglingId === u._id || isSelf(u._id)}
-                          title={isSelf(u._id) ? "Can't change your own status" : ''}
-                        >
-                          {u.isActive ? 'Deactivate' : 'Activate'}
-                        </button>
-
-                        {/* Role toggle — only available if not superadmin target and not self */}
-                        {u.role !== 'superadmin' && !isSelf(u._id) && (
-                          <button
-                            className="admin-btn admin-btn-sm"
-                            onClick={() => handleRoleClick(u)}
-                            style={{
-                              background: u.role === 'user' ? '#eff6ff' : '#fff3f3',
-                              color:      u.role === 'user' ? '#3b82f6' : '#ef4444',
-                              border:     `1.5px solid ${u.role === 'user' ? '#bfdbfe' : '#fecaca'}`,
-                              fontWeight: 700,
-                            }}
-                          >
-                            {u.role === 'user' ? '🛡️ Make Admin' : '👤 Remove Admin'}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Joined</span>
+                      <span className="admin-date">{new Date(u.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                  </div>
+                  <div className="admin-mobile-card-footer">
+                    <button
+                      className={`admin-btn admin-btn-sm ${u.isActive ? 'admin-btn-danger' : 'admin-btn-primary'}`}
+                      onClick={() => handleToggleStatus(u)}
+                      disabled={togglingId === u._id || isSelf(u._id)}
+                    >
+                      {u.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    {u.role !== 'superadmin' && !isSelf(u._id) && (
+                      <button
+                        className="admin-btn admin-btn-sm"
+                        onClick={() => handleRoleClick(u)}
+                        style={{
+                          background: u.role === 'user' ? '#eff6ff' : '#fff3f3',
+                          color:      u.role === 'user' ? '#3b82f6' : '#ef4444',
+                          border:     `1.5px solid ${u.role === 'user' ? '#bfdbfe' : '#fecaca'}`,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {u.role === 'user' ? 'Make Admin' : 'Remove Admin'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {pages > 1 && (
           <div className="admin-pagination">
-            <button className="admin-btn admin-btn-ghost" disabled={page === 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
+            <button className="admin-btn admin-btn-ghost" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</button>
             <span className="admin-page-info">Page {page} of {pages}</span>
-            <button className="admin-btn admin-btn-ghost" disabled={page === pages} onClick={() => setPage(p => p + 1)}>Next →</button>
+            <button className="admin-btn admin-btn-ghost" disabled={page === pages} onClick={() => setPage(p => p + 1)}>Next</button>
           </div>
         )}
       </div>

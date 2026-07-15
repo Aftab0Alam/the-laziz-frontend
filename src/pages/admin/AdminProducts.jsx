@@ -121,66 +121,118 @@ export default function AdminProducts() {
         {loading ? (
           <div className="admin-loading">Loading products…</div>
         ) : (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Image</th>
-                  <th>Name</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Badges</th>
-                  <th>Available</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.length === 0 ? (
-                  <tr><td colSpan={7} className="admin-table-empty">No products found.</td></tr>
-                ) : products.map(p => (
-                  <tr key={p._id}>
-                    <td>
-                      <img src={p.imageUrl} alt={p.name} className="admin-product-thumb" />
-                    </td>
-                    <td>
-                      <div className="admin-product-name">{p.name}</div>
-                      <div className="admin-product-slug">{p.slug}</div>
-                    </td>
-                    <td>{p.categoryId?.name || '—'}</td>
-                    <td>
-                      <div>₹{p.price}</div>
-                      {p.discountedPrice && <div className="admin-old-price">₹{p.discountedPrice}</div>}
-                    </td>
-                    <td>
-                      <div className="admin-badge-row">
-                        {p.isVegetarian && <span className="admin-badge badge-green">🌿 Veg</span>}
-                        {p.isBestSeller && <span className="admin-badge badge-orange">🔥 Best</span>}
-                        {p.isFeatured  && <span className="admin-badge badge-purple">⭐ Featured</span>}
-                        {p.isNewArrival && <span className="admin-badge badge-blue">🆕 New</span>}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`admin-badge ${p.isAvailable ? 'badge-green' : 'badge-red'}`}>
-                        {p.isAvailable ? 'Yes' : 'No'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="admin-action-btns">
-                        <button className="admin-btn admin-btn-sm admin-btn-ghost" onClick={() => openEdit(p)}>✏️ Edit</button>
-                        <button
-                          className="admin-btn admin-btn-sm admin-btn-danger"
-                          onClick={() => handleDelete(p)}
-                          disabled={deletingId === p._id}
-                        >
-                          🗑️ Delete
-                        </button>
-                      </div>
-                    </td>
+          <>
+            {/* Desktop table */}
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Badges</th>
+                    <th>Available</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {products.length === 0 ? (
+                    <tr><td colSpan={7} className="admin-table-empty">No products found.</td></tr>
+                  ) : products.map(p => (
+                    <tr key={p._id}>
+                      <td>
+                        <img src={p.imageUrl} alt={p.name} className="admin-product-thumb" />
+                      </td>
+                      <td>
+                        <div className="admin-product-name">{p.name}</div>
+                        <div className="admin-product-slug">{p.slug}</div>
+                      </td>
+                      <td>{p.categoryId?.name || '—'}</td>
+                      <td>
+                        <div>Rs.{p.price}</div>
+                        {p.discountedPrice && <div className="admin-old-price">Rs.{p.discountedPrice}</div>}
+                      </td>
+                      <td>
+                        <div className="admin-badge-row">
+                          {p.isVegetarian && <span className="admin-badge badge-green">Veg</span>}
+                          {p.isBestSeller && <span className="admin-badge badge-orange">Best</span>}
+                          {p.isFeatured  && <span className="admin-badge badge-purple">Featured</span>}
+                          {p.isNewArrival && <span className="admin-badge badge-blue">New</span>}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`admin-badge ${p.isAvailable ? 'badge-green' : 'badge-red'}`}>
+                          {p.isAvailable ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="admin-action-btns">
+                          <button className="admin-btn admin-btn-sm admin-btn-ghost" onClick={() => openEdit(p)}>Edit</button>
+                          <button
+                            className="admin-btn admin-btn-sm admin-btn-danger"
+                            onClick={() => handleDelete(p)}
+                            disabled={deletingId === p._id}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="admin-mobile-cards">
+              {products.length === 0 ? (
+                <div className="admin-table-empty">No products found.</div>
+              ) : products.map(p => (
+                <div key={p._id} className="admin-mobile-card">
+                  <div className="admin-mobile-card-header">
+                    <img src={p.imageUrl} alt={p.name} className="admin-product-thumb" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="admin-product-name">{p.name}</div>
+                      <div className="admin-product-slug">{p.categoryId?.name || '—'}</div>
+                    </div>
+                    <span className={`admin-badge ${p.isAvailable ? 'badge-green' : 'badge-red'}`}>
+                      {p.isAvailable ? 'Available' : 'Unavailable'}
+                    </span>
+                  </div>
+                  <div className="admin-mobile-card-body">
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Price</span>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: 700, color: '#111827' }}>Rs.{p.price}</div>
+                        {p.discountedPrice && <div className="admin-old-price">Rs.{p.discountedPrice}</div>}
+                      </div>
+                    </div>
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Badges</span>
+                      <div className="admin-badge-row" style={{ justifyContent: 'flex-end' }}>
+                        {p.isVegetarian && <span className="admin-badge badge-green">Veg</span>}
+                        {p.isBestSeller && <span className="admin-badge badge-orange">Best</span>}
+                        {p.isFeatured  && <span className="admin-badge badge-purple">Featured</span>}
+                        {p.isNewArrival && <span className="admin-badge badge-blue">New</span>}
+                        {!p.isVegetarian && !p.isBestSeller && !p.isFeatured && !p.isNewArrival && <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="admin-mobile-card-footer">
+                    <button className="admin-btn admin-btn-sm admin-btn-ghost" onClick={() => openEdit(p)}>Edit</button>
+                    <button
+                      className="admin-btn admin-btn-sm admin-btn-danger"
+                      onClick={() => handleDelete(p)}
+                      disabled={deletingId === p._id}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

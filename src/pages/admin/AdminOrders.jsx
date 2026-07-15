@@ -303,45 +303,111 @@ export default function AdminOrders() {
         {loading ? (
           <div className="admin-loading">Loading orders…</div>
         ) : (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Order Code</th>
-                  <th>Customer</th>
-                  <th>Items</th>
-                  <th>Amount</th>
-                  <th>Payment</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.length === 0 ? (
-                  <tr><td colSpan={7} className="admin-table-empty">No orders found.</td></tr>
-                ) : orders.map(order => (
-                  <tr key={order._id} className={order.currentStatus === 'Pending' ? 'order-row-pending' : ''}>
-                    <td><span className="admin-order-code">{order.orderCode}</span></td>
-                    <td>
-                      <div className="admin-customer-name">{order.userId?.name || 'Guest'}</div>
-                      <div className="admin-customer-phone">{order.customerPhone}</div>
-                    </td>
-                    <td>
-                      <div className="admin-items-list">
-                        {order.items.slice(0, 2).map((it, i) => (
-                          <span key={i} className="admin-item-chip">{it.name} ×{it.quantity}</span>
-                        ))}
-                        {order.items.length > 2 && <span className="admin-item-more">+{order.items.length - 2} more</span>}
+          <>
+            {/* Desktop table */}
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order Code</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Amount</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.length === 0 ? (
+                    <tr><td colSpan={7} className="admin-table-empty">No orders found.</td></tr>
+                  ) : orders.map(order => (
+                    <tr key={order._id} className={order.currentStatus === 'Pending' ? 'order-row-pending' : ''}>
+                      <td><span className="admin-order-code">{order.orderCode}</span></td>
+                      <td>
+                        <div className="admin-customer-name">{order.userId?.name || 'Guest'}</div>
+                        <div className="admin-customer-phone">{order.customerPhone}</div>
+                      </td>
+                      <td>
+                        <div className="admin-items-list">
+                          {order.items.slice(0, 2).map((it, i) => (
+                            <span key={i} className="admin-item-chip">{it.name} x{it.quantity}</span>
+                          ))}
+                          {order.items.length > 2 && <span className="admin-item-more">+{order.items.length - 2} more</span>}
+                        </div>
+                      </td>
+                      <td><strong>Rs.{order.totalAmount.toLocaleString('en-IN')}</strong></td>
+                      <td>
+                        <div style={{ fontSize: 12 }}>{order.paymentMethod}</div>
+                        <span className={`admin-badge ${order.paymentStatus === 'Paid' ? 'badge-green' : 'badge-yellow'}`}>
+                          {order.paymentStatus}
+                        </span>
+                      </td>
+                      <td>
+                        <select
+                          className="admin-status-select"
+                          value={order.currentStatus}
+                          onChange={e => handleStatusChange(order._id, e.target.value)}
+                          disabled={updatingId === order._id}
+                          style={{ borderColor: STATUS_COLORS[order.currentStatus], color: STATUS_COLORS[order.currentStatus] }}
+                        >
+                          {ALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </td>
+                      <td className="admin-date">
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards (shown below 768px via CSS) */}
+            <div className="admin-mobile-cards">
+              {orders.length === 0 ? (
+                <div className="admin-table-empty">No orders found.</div>
+              ) : orders.map(order => (
+                <div key={order._id} className={`admin-mobile-card${order.currentStatus === 'Pending' ? ' order-row-pending' : ''}`}>
+                  <div className="admin-mobile-card-header">
+                    <span className="admin-order-code">{order.orderCode}</span>
+                    <span className={`admin-badge ${order.paymentStatus === 'Paid' ? 'badge-green' : 'badge-yellow'}`} style={{ marginLeft: 'auto' }}>
+                      {order.paymentStatus}
+                    </span>
+                  </div>
+                  <div className="admin-mobile-card-body">
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Customer</span>
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="admin-customer-name">{order.userId?.name || 'Guest'}</div>
+                        <div className="admin-customer-phone">{order.customerPhone}</div>
                       </div>
-                    </td>
-                    <td><strong>₹{order.totalAmount.toLocaleString('en-IN')}</strong></td>
-                    <td>
-                      <div style={{ fontSize: 12 }}>{order.paymentMethod}</div>
-                      <span className={`admin-badge ${order.paymentStatus === 'Paid' ? 'badge-green' : 'badge-yellow'}`}>
-                        {order.paymentStatus}
+                    </div>
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Items</span>
+                      <div style={{ textAlign: 'right' }}>
+                        {order.items.slice(0, 2).map((it, i) => (
+                          <div key={i} className="admin-item-chip">{it.name} x{it.quantity}</div>
+                        ))}
+                        {order.items.length > 2 && <div className="admin-item-more">+{order.items.length - 2} more</div>}
+                      </div>
+                    </div>
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Amount</span>
+                      <strong style={{ color: '#111827' }}>Rs.{order.totalAmount.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Payment</span>
+                      <span className="admin-mobile-value">{order.paymentMethod}</span>
+                    </div>
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Date</span>
+                      <span className="admin-date">
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
-                    </td>
-                    <td>
+                    </div>
+                    <div className="admin-mobile-row">
+                      <span className="admin-mobile-label">Status</span>
                       <select
                         className="admin-status-select"
                         value={order.currentStatus}
@@ -351,22 +417,19 @@ export default function AdminOrders() {
                       >
                         {ALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
-                    </td>
-                    <td className="admin-date">
-                      {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {pages > 1 && (
           <div className="admin-pagination">
-            <button className="admin-btn admin-btn-ghost" disabled={page === 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
+            <button className="admin-btn admin-btn-ghost" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</button>
             <span className="admin-page-info">Page {page} of {pages}</span>
-            <button className="admin-btn admin-btn-ghost" disabled={page === pages} onClick={() => setPage(p => p + 1)}>Next →</button>
+            <button className="admin-btn admin-btn-ghost" disabled={page === pages} onClick={() => setPage(p => p + 1)}>Next</button>
           </div>
         )}
       </div>

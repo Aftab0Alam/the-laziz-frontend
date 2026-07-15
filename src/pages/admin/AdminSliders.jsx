@@ -214,10 +214,10 @@ export default function AdminSliders() {
             <button className="admin-btn admin-btn-ghost" onClick={cancelEdit}>✕ Cancel</button>
           </div>
 
-          <div className="admin-form" style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+          <div className="admin-form admin-form-grid" style={{ padding: '20px' }}>
 
             {/* ── IMAGE SECTION — full width ── */}
-            <div style={{ gridColumn: 'span 2' }}>
+            <div className="admin-span-full">
               <div className="admin-label" style={{ marginBottom: 10 }}>Slide Image *</div>
 
               {/* Mode tabs */}
@@ -384,7 +384,7 @@ export default function AdminSliders() {
             </div>
 
             {/* ── Save ── */}
-            <div style={{ gridColumn: 'span 2', display: 'flex', gap: 10 }}>
+            <div className="admin-span-full" style={{ display: 'flex', gap: 10 }}>
               <button className="admin-btn admin-btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1, padding: 13 }}>
                 {saving ? '⏳ Saving…' : '💾 Save Slide'}
               </button>

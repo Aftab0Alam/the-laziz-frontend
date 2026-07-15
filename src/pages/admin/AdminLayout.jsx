@@ -23,9 +23,10 @@ export default function AdminLayout() {
   return (
     <div className="admin-shell">
       {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div className="admin-overlay" onClick={() => setSidebarOpen(false)} />
-      )}
+      <div
+        className={`admin-overlay${sidebarOpen ? ' open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
 
       {/* Sidebar */}
       <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
