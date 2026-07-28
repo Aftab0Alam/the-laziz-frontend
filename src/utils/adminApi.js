@@ -13,7 +13,7 @@ export const updateOrderStatus = (id, status) =>
 
 // ─── PRODUCTS ────────────────────────────────────────────────────
 export const fetchAdminProducts = (params = {}) =>
-  api.get('/products', { params: { available: 'all', limit: 50, ...params } }).then(r => r.data.data);
+  api.get('/products', { params: { available: 'all', limit: 12, ...params } }).then(r => r.data.data);
 
 export const createProduct = (formData) =>
   api.post('/products', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data.data);

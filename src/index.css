@@ -427,9 +427,47 @@ ul, ol { list-style: none; }
    MENU PAGE
    ============================================ */
 .menu-page { background: var(--bg-primary); }
-.menu-category-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 12px var(--container-padding); background: white; border-bottom: 1px solid var(--border-color); position: sticky; top: calc(var(--header-height) + 56px); z-index: 800; }
-.menu-tab { white-space: nowrap; padding: 6px 14px; border-radius: var(--border-radius-full); font-size: 12px; font-weight: 600; color: var(--text-secondary); border: 1.5px solid var(--border-color); background: white; transition: all var(--transition-fast); cursor: pointer; }
-.menu-tab.active { background: var(--brand-red); color: white; border-color: var(--brand-red); }
+
+/* Category tabs — positioned inside the sticky wrapper, NOT sticky themselves */
+.menu-category-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px var(--container-padding) 12px;
+  background: white;
+  /* No sticky here — the parent wrapper in MenuPage handles it */
+}
+
+.menu-tab {
+  white-space: nowrap;
+  padding: 7px 16px;
+  border-radius: var(--border-radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  background: white;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.menu-tab:hover:not(.active) {
+  border-color: #E53935;
+  color: #E53935;
+  background: #fff5f5;
+}
+
+.menu-tab.active {
+  background: var(--brand-red);
+  color: white;
+  border-color: var(--brand-red);
+  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
+}
+
+
 .menu-grid { padding: var(--container-padding); display: flex; flex-direction: column; gap: 12px; }
 /* Menu item row card */
 .menu-item-card { display: flex; gap: 12px; background: white; border-radius: var(--border-radius-md); padding: 12px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); cursor: pointer; }

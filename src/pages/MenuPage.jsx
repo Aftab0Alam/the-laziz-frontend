@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SlidersHorizontal, Search, X, ChevronLeft, Leaf, Flame } from 'lucide-react';
 import Header from '../components/Layout/Header';
 import BottomNav from '../components/Layout/BottomNav';
+import Pagination from '../components/Pagination';
 import api from '../utils/api';
 import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
@@ -35,6 +36,7 @@ const MenuPage = () => {
   const buildQuery = () => {
     const params = new URLSearchParams();
     if (activeCategory && activeCategory !== 'all') params.set('category', activeCategory);
+    if (searchQ.trim()) params.set('search', searchQ.trim());
     if (filters.isVeg) params.set('isVeg', 'true');
     if (filters.isBestSeller) params.set('isBestSeller', 'true');
     if (filters.isFeatured) params.set('isFeatured', 'true');
@@ -46,8 +48,11 @@ const MenuPage = () => {
     return params.toString();
   };
 
+  // Reset to page 1 whenever search query or filters change
+  useEffect(() => { setPage(1); }, [searchQ, filters]);
+
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ['menuProducts', activeCategory, filters, page],
+    queryKey: ['menuProducts', activeCategory, filters, searchQ, page],
     queryFn: () => api.get(`/products?${buildQuery()}`).then(r => r.data.data),
     staleTime: 2 * 60 * 1000,
     keepPreviousData: true,
@@ -62,64 +67,113 @@ const MenuPage = () => {
   const products = productsData?.products || [];
   const totalPages = productsData?.pages || 1;
 
+  // Count active filters for badge
+  const activeFilterCount = [
+    filters.isVeg, filters.isBestSeller, filters.isFeatured,
+    filters.sort !== 'default', !!filters.minPrice, !!filters.maxPrice,
+  ].filter(Boolean).length;
+
+  // Map category slug → emoji for visual tabs
+  const CATEGORY_EMOJI = {
+    biryani: '🍚', chicken: '🍗', momos: '🥟', rolls: '🌯',
+    'fried-chicken': '🍗', pizza: '🍕', burger: '🍔', noodles: '🍜',
+    drinks: '🥤', desserts: '🍰', starters: '🍽️', kebab: '🍢',
+    mutton: '🥩', fish: '🐟', veg: '🌿', sandwich: '🥪',
+    default: '🍴',
+  };
+  const getCatEmoji = (slug) => CATEGORY_EMOJI[slug] || CATEGORY_EMOJI.default;
+
   return (
     <div className="page-wrapper">
       <Header />
 
-      {/* Search bar for menu */}
-      <div style={{ padding: '10px 16px', background: 'white', borderBottom: '1px solid #EBEBEB', display: 'flex', gap: 8 }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: '#F5F5F5', borderRadius: 999, padding: '9px 14px' }}>
-          <Search size={16} color="#999" />
-          <input
-            type="text" value={searchQ}
-            onChange={e => setSearchQ(e.target.value)}
-            placeholder="Search in menu..."
-            style={{ flex: 1, background: 'transparent', fontSize: 13, color: '#1A1A1A' }}
-          />
-          {searchQ && <button onClick={() => setSearchQ('')}><X size={14} color="#999" /></button>}
-        </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          style={{ background: showFilters ? '#FFEBEE' : '#F5F5F5', borderRadius: 999, padding: '9px 14px', display: 'flex', alignItems: 'center', gap: 4, color: showFilters ? '#E53935' : '#666', fontWeight: 600, fontSize: 13 }}
-        >
-          <SlidersHorizontal size={15} /> Filter
-        </button>
-      </div>
-
-      {/* Filter Panel */}
-      {showFilters && (
-        <div style={{ background: 'white', padding: '12px 16px', borderBottom: '1px solid #EBEBEB' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-            {[
-              { key: 'isVeg', label: '🌿 Veg Only' },
-              { key: 'isBestSeller', label: '🔥 Best Sellers' },
-              { key: 'isFeatured', label: '⭐ Today\'s Special' },
-            ].map(f => (
-              <button key={f.key}
-                onClick={() => setFilters(prev => ({ ...prev, [f.key]: !prev[f.key] }))}
-                style={{ padding: '6px 14px', borderRadius: 999, border: `1.5px solid ${filters[f.key] ? '#E53935' : '#EBEBEB'}`, background: filters[f.key] ? '#FFEBEE' : 'white', color: filters[f.key] ? '#E53935' : '#666', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                {f.label}
-              </button>
-            ))}
+      {/* ── STICKY TOP BAR: Search + Categories ──────────────────── */}
+      <div style={{
+        position: 'sticky',
+        top: 60,        // stick right below the fixed header
+        zIndex: 900,
+        background: 'white',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      }}>
+        {/* Search row */}
+        <div style={{ padding: '10px 16px', display: 'flex', gap: 8, borderBottom: '1px solid #F0F0F0' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: '#F5F5F5', borderRadius: 999, padding: '9px 14px' }}>
+            <Search size={16} color="#999" />
+            <input
+              type="text" value={searchQ}
+              onChange={e => setSearchQ(e.target.value)}
+              placeholder="Search in menu..."
+              style={{ flex: 1, background: 'transparent', fontSize: 13, color: '#1A1A1A' }}
+            />
+            {searchQ && <button onClick={() => setSearchQ('')}><X size={14} color="#999" /></button>}
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#666' }}>Sort:</span>
-            <select value={filters.sort} onChange={e => setFilters(prev => ({ ...prev, sort: e.target.value }))}
-              style={{ flex: 1, border: '1.5px solid #EBEBEB', borderRadius: 8, padding: '6px 10px', fontSize: 13, background: 'white' }}>
-              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-        </div>
-      )}
-
-      {/* Category Tabs */}
-      <div className="menu-category-tabs hide-scrollbar" style={{ top: '110px' }}>
-        <button className={`menu-tab${activeCategory === 'all' ? ' active' : ''}`} onClick={() => { setActiveCategory('all'); setPage(1); }}>All</button>
-        {(categories || []).map(cat => (
-          <button key={cat._id} className={`menu-tab${activeCategory === cat.slug ? ' active' : ''}`} onClick={() => { setActiveCategory(cat.slug); setPage(1); }}>
-            {cat.name}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            style={{
+              background: showFilters || activeFilterCount > 0 ? '#FFEBEE' : '#F5F5F5',
+              borderRadius: 999, padding: '9px 14px',
+              display: 'flex', alignItems: 'center', gap: 4,
+              color: showFilters || activeFilterCount > 0 ? '#E53935' : '#666',
+              fontWeight: 600, fontSize: 13, position: 'relative',
+            }}
+          >
+            <SlidersHorizontal size={15} /> Filter
+            {activeFilterCount > 0 && (
+              <span style={{
+                position: 'absolute', top: 4, right: 4,
+                background: '#E53935', color: 'white',
+                width: 16, height: 16, borderRadius: '50%',
+                fontSize: 9, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>{activeFilterCount}</span>
+            )}
           </button>
-        ))}
+        </div>
+
+        {/* Filter Panel — slides in below search */}
+        {showFilters && (
+          <div style={{ background: '#FAFAFA', padding: '12px 16px', borderBottom: '1px solid #EBEBEB' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              {[
+                { key: 'isVeg', label: '🌿 Veg Only' },
+                { key: 'isBestSeller', label: '🔥 Best Sellers' },
+                { key: 'isFeatured', label: '⭐ Today\'s Special' },
+              ].map(f => (
+                <button key={f.key}
+                  onClick={() => setFilters(prev => ({ ...prev, [f.key]: !prev[f.key] }))}
+                  style={{ padding: '6px 14px', borderRadius: 999, border: `1.5px solid ${filters[f.key] ? '#E53935' : '#EBEBEB'}`, background: filters[f.key] ? '#FFEBEE' : 'white', color: filters[f.key] ? '#E53935' : '#666', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#666' }}>Sort:</span>
+              <select value={filters.sort} onChange={e => setFilters(prev => ({ ...prev, sort: e.target.value }))}
+                style={{ flex: 1, border: '1.5px solid #EBEBEB', borderRadius: 8, padding: '6px 10px', fontSize: 13, background: 'white' }}>
+                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Category Tabs */}
+        <div className="menu-category-tabs hide-scrollbar" style={{ position: 'static', boxShadow: 'none', borderBottom: 'none' }}>
+          <button
+            className={`menu-tab${activeCategory === 'all' ? ' active' : ''}`}
+            onClick={() => { setActiveCategory('all'); setPage(1); }}
+          >
+            🍴 All
+          </button>
+          {(categories || []).map(cat => (
+            <button
+              key={cat._id}
+              className={`menu-tab${activeCategory === cat.slug ? ' active' : ''}`}
+              onClick={() => { setActiveCategory(cat.slug); setPage(1); }}
+            >
+              {getCatEmoji(cat.slug)} {cat.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Products */}
@@ -186,19 +240,12 @@ const MenuPage = () => {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '16px' }}>
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-            style={{ padding: '8px 16px', borderRadius: 999, border: '1.5px solid #EBEBEB', background: page === 1 ? '#F5F5F5' : 'white', cursor: page === 1 ? 'default' : 'pointer', fontSize: 13, fontWeight: 600 }}>
-            Prev
-          </button>
-          <span style={{ padding: '8px 16px', fontSize: 13, color: '#666' }}>Page {page} of {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-            style={{ padding: '8px 16px', borderRadius: 999, border: '1.5px solid #EBEBEB', background: page === totalPages ? '#F5F5F5' : 'white', cursor: page === totalPages ? 'default' : 'pointer', fontSize: 13, fontWeight: 600, color: '#E53935' }}>
-            Next
-          </button>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        variant="user"
+      />
 
       <BottomNav />
     </div>

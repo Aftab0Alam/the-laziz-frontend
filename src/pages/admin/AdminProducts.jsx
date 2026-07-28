@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { fetchAdminProducts, fetchCategories, createProduct, updateProduct, deleteProduct } from '../../utils/adminApi';
+import Pagination from '../../components/Pagination';
 import toast from 'react-hot-toast';
 
 const EMPTY_FORM = {
@@ -12,6 +13,9 @@ const EMPTY_FORM = {
 export default function AdminProducts() {
   const [products, setProducts]     = useState([]);
   const [categories, setCategories] = useState([]);
+  const [total, setTotal]           = useState(0);
+  const [page, setPage]             = useState(1);
+  const [pages, setPages]           = useState(1);
   const [loading, setLoading]       = useState(true);
   const [showModal, setShowModal]   = useState(false);
   const [editing, setEditing]       = useState(null); // product object or null
@@ -21,14 +25,24 @@ export default function AdminProducts() {
   const [saving, setSaving]         = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    Promise.all([fetchAdminProducts(), fetchCategories()])
-      .then(([p, c]) => { setProducts(p.products || []); setCategories(c || []); })
-      .finally(() => setLoading(false));
-  }, []);
+  const LIMIT = 12;
 
-  useEffect(() => { load(); }, [load]);
+  const load = useCallback((pg = page) => {
+    setLoading(true);
+    Promise.all([
+      fetchAdminProducts({ page: pg, limit: LIMIT }),
+      fetchCategories(),
+    ])
+      .then(([p, c]) => {
+        setProducts(p.products || []);
+        setTotal(p.total || 0);
+        setPages(p.pages || 1);
+        setCategories(c || []);
+      })
+      .finally(() => setLoading(false));
+  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { load(page); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openAdd = () => {
     setEditing(null);
@@ -112,7 +126,7 @@ export default function AdminProducts() {
       <div className="admin-page-header">
         <div>
           <h1 className="admin-page-title">Products</h1>
-          <span className="admin-page-sub">{products.length} items</span>
+          <span className="admin-page-sub">{total} items</span>
         </div>
         <button className="admin-btn admin-btn-primary" onClick={openAdd}>+ Add Product</button>
       </div>
@@ -234,6 +248,14 @@ export default function AdminProducts() {
             </div>
           </>
         )}
+
+        {/* Pagination */}
+        <Pagination
+          page={page}
+          totalPages={pages}
+          onPageChange={(p) => setPage(p)}
+          variant="admin"
+        />
       </div>
 
       {/* Modal */}

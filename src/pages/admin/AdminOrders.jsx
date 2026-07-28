@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { fetchAllOrders, updateOrderStatus } from '../../utils/adminApi';
 import { useOrderAlarm } from '../../hooks/useOrderAlarm';
+import Pagination from '../../components/Pagination';
 import toast from 'react-hot-toast';
 
 const ALL_STATUSES = ['Pending', 'Confirmed', 'Preparing', 'Ready', 'Out for Delivery', 'Delivered', 'Cancelled'];
@@ -425,13 +426,12 @@ export default function AdminOrders() {
           </>
         )}
 
-        {pages > 1 && (
-          <div className="admin-pagination">
-            <button className="admin-btn admin-btn-ghost" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</button>
-            <span className="admin-page-info">Page {page} of {pages}</span>
-            <button className="admin-btn admin-btn-ghost" disabled={page === pages} onClick={() => setPage(p => p + 1)}>Next</button>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          totalPages={pages}
+          onPageChange={(p) => setPage(p)}
+          variant="admin"
+        />
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { ArrowLeft, RotateCcw, X, AlertTriangle } from 'lucide-react';
 import api from '../utils/api';
 import useCartStore from '../store/cartStore';
 import BottomNav from '../components/Layout/BottomNav';
+import Pagination from '../components/Pagination';
 import { formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -44,10 +45,14 @@ const CancelCountdown = ({ createdAt, onExpire }) => {
   );
 };
 
+const LIMIT = 8;
+
 const OrdersPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { addItem } = useCartStore();
+
+  const [page, setPage] = useState(1);
 
   // Track which order IDs still have the cancel window open (client-side)
   const [cancellableIds, setCancellableIds] = useState(new Set());
@@ -57,13 +62,14 @@ const OrdersPage = () => {
   const prevStatusesRef = useRef({});
 
   const { data, isLoading, dataUpdatedAt } = useQuery({
-    queryKey: ['myOrders'],
-    queryFn: () => api.get('/orders/my-orders').then(r => r.data.data),
+    queryKey: ['myOrders', page],
+    queryFn: () => api.get(`/orders/my-orders?page=${page}&limit=${LIMIT}`).then(r => r.data.data),
     refetchInterval: 10_000,           // poll every 10 s
     refetchIntervalInBackground: true, // keep polling even if tab is not focused
   });
 
   const orders = data?.orders || [];
+  const totalPages = data?.pages || 1;
 
   // Build initial set of cancellable orders + detect status changes
   useEffect(() => {
@@ -157,7 +163,7 @@ const OrdersPage = () => {
           </div>
         )}
 
-        {/* Order cards */}
+        {/* Orders list */}
         {orders.map(order => {
           const canCancel = cancellableIds.has(order._id);
           return (
@@ -208,6 +214,14 @@ const OrdersPage = () => {
             </div>
           );
         })}
+
+        {/* Pagination */}
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          variant="user"
+        />
       </div>
 
       <BottomNav />
