@@ -1,7 +1,8 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import axios from 'axios';
 import useAuthStore from './store/authStore';
 
 // Lazy load pages
@@ -50,18 +51,45 @@ const PageLoader = () => (
   </div>
 );
 
-// Protected route wrapper
+// Protected route wrapper — waits for Zustand persist rehydration
+// before deciding to redirect (fixes "Not Found" / flash-to-login on refresh)
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, _hasHydrated } = useAuthStore();
+  if (!_hasHydrated) return <PageLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return children;
 };
 
 // Admin-only route guard
 const AdminRoute = ({ children }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, _hasHydrated } = useAuthStore();
+  if (!_hasHydrated) return <PageLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (!['admin', 'superadmin'].includes(user?.role)) return <Navigate to="/" replace />;
+  return children;
+};
+
+// Restores the in-memory accessToken from the httpOnly refresh-token cookie
+// on every page load — runs in the BACKGROUND so the app renders immediately.
+// Protected pages wait for _hasHydrated via ProtectedRoute; public pages are
+// never blocked by this initializer.
+const AuthInitializer = ({ children }) => {
+  const { isAuthenticated, setAccessToken, logout } = useAuthStore();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    // Fire-and-forget: silently get a fresh access token via the httpOnly cookie
+    axios
+      .post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/refresh`,
+        {},
+        { withCredentials: true }
+      )
+      .then(({ data }) => setAccessToken(data.data.accessToken))
+      .catch(() => logout()); // Refresh token expired/missing — clean logout
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Render immediately — no blocking loader
   return children;
 };
 
@@ -69,6 +97,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <AuthInitializer>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Public routes */}
@@ -122,6 +151,7 @@ function App() {
             error: { style: { background: '#B71C1C', color: 'white' } },
           }}
         />
+        </AuthInitializer>
       </BrowserRouter>
     </QueryClientProvider>
   );

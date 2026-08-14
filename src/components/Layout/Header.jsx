@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, MapPin, ChevronDown, ShoppingCart, Search, X, SlidersHorizontal } from 'lucide-react';
+import { Menu, ShoppingCart, Search, X, MapPin } from 'lucide-react';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
 import api from '../../utils/api';
@@ -99,15 +99,11 @@ const Header = () => {
           </div>
         </a>
 
-        {/* Location — hide when search is open */}
+        {/* Location */}
         {!searchOpen && (
-          <div className="header-location">
-            <MapPin size={14} className="header-location-icon" color="#E53935" />
-            <div className="header-location-text">
-              <div className="header-location-city">Jainagar, Koderma</div>
-              <div className="header-location-detect">Detect Location</div>
-            </div>
-            <ChevronDown size={14} color="#666" />
+          <div className="header-location-pill">
+            <MapPin size={12} color="#E53935" />
+            <span>Jainagar</span>
           </div>
         )}
 

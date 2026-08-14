@@ -1,5 +1,5 @@
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, ShoppingBag, MessageCircle } from 'lucide-react';
+﻿import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Trash2, ShoppingBag, MessageCircle, Plus, Minus, ChevronRight, Tag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import BottomNav from '../components/Layout/BottomNav';
 import useAuthStore from '../store/authStore';
@@ -9,9 +9,12 @@ const CartPage = () => {
   const { items, updateQuantity, removeItem, clearCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
-  const subtotal = items.reduce((sum, i) => sum + i.subtotal, 0);
-  const deliveryCharge = subtotal > 0 ? 20 : 0; // Flat ₹20 delivery
-  const total = subtotal + deliveryCharge;
+  const subtotal      = items.reduce((sum, i) => sum + i.subtotal, 0);
+  const deliveryCharge = subtotal > 0 ? 20 : 0;
+  const total          = subtotal + deliveryCharge;
+  const itemCount      = items.reduce((s, i) => s + i.quantity, 0);
+  const freeDeliveryAt = 499;
+  const toFree         = Math.max(0, freeDeliveryAt - subtotal);
 
   const handleCheckout = () => {
     if (!isAuthenticated) { navigate('/login?redirect=/checkout'); return; }
@@ -19,80 +22,137 @@ const CartPage = () => {
   };
 
   return (
-    <div className="page-wrapper">
-      {/* Header */}
-      <div style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, zIndex: 1000, height: 56, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderBottom: '1px solid #EBEBEB' }}>
-        <button onClick={() => navigate(-1)}><ArrowLeft size={22} /></button>
-        <span style={{ fontWeight: 700, fontSize: 16 }}>My Cart ({items.length})</span>
-        {items.length > 0 && <button onClick={clearCart} style={{ fontSize: 12, color: '#E53935', fontWeight: 600 }}>Clear All</button>}
-        {items.length === 0 && <div style={{ width: 64 }} />}
+    <div className="page-wrapper cart-page-bg">
+
+      {/* ── Top Bar ── */}
+      <div className="cart-topbar">
+        <button className="cart-topbar-back" onClick={() => navigate(-1)}>
+          <ArrowLeft size={20} />
+        </button>
+        <div className="cart-topbar-title">
+          My Cart
+          {itemCount > 0 && <span className="cart-topbar-badge">{itemCount}</span>}
+        </div>
+        {items.length > 0
+          ? <button className="cart-topbar-clear" onClick={clearCart}>Clear All</button>
+          : <div style={{ width: 64 }} />}
       </div>
 
-      <div style={{ paddingTop: 8 }}>
+      <div className="cart-body">
         {items.length === 0 ? (
-          <div className="cart-empty">
-            <div className="cart-empty-icon">🛒</div>
+          /* ── Empty State ── */
+          <div className="cart-empty-wrap">
+            <div className="cart-empty-art">🛒</div>
             <div className="cart-empty-title">Your cart is empty</div>
-            <div className="cart-empty-text">Add some delicious items from our menu</div>
-            <button className="btn btn-primary" onClick={() => navigate('/menu')}>
-              <ShoppingBag size={16} />Browse Menu
+            <div className="cart-empty-sub">Looks like you haven't added anything yet</div>
+            <button className="cart-empty-btn" onClick={() => navigate('/menu')}>
+              <ShoppingBag size={16} /> Browse Menu
             </button>
           </div>
         ) : (
           <>
-            {/* Cart Items */}
-            {items.map(item => (
-              <div key={item.productId} className="cart-item">
-                <div className="cart-item-image">
-                  <img src={item.imageUrl} alt={item.name} loading="lazy" />
+            {/* ── Free delivery progress ── */}
+            {toFree > 0 && (
+              <div className="cart-delivery-bar">
+                <div className="cart-delivery-bar-top">
+                  <span>🚴 Add <strong>₹{toFree}</strong> more for free delivery!</span>
+                  <span className="cart-delivery-pct">{Math.round((subtotal / freeDeliveryAt) * 100)}%</span>
                 </div>
-                <div className="cart-item-body">
-                  <div className="cart-item-name">{item.name}</div>
-                  <div className="cart-item-price">₹{item.price} each</div>
-                  <div className="cart-item-controls">
-                    <div className="qty-control">
-                      <button onClick={() => updateQuantity(item.productId, item.quantity - 1)}>−</button>
-                      <span>{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.productId, item.quantity + 1)}>+</button>
-                    </div>
-                    <span className="cart-item-subtotal">₹{item.subtotal}</span>
-                  </div>
-                  <button className="remove-btn" onClick={() => removeItem(item.productId)}><Trash2 size={12} /> Remove</button>
+                <div className="cart-delivery-track">
+                  <div className="cart-delivery-fill" style={{ width: `${Math.min((subtotal / freeDeliveryAt) * 100, 100)}%` }} />
                 </div>
               </div>
-            ))}
-
-            {/* Delivery Note */}
-            {subtotal > 0 && (
-              <div style={{ background: '#FFF8E1', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>🚴</span>
-                <span style={{ fontSize: 13, color: '#E65100' }}>Delivery charge: <strong>₹20</strong></span>
+            )}
+            {toFree === 0 && (
+              <div className="cart-delivery-bar cart-delivery-bar--free">
+                🎉 <strong>Free delivery unlocked!</strong> Enjoy!
               </div>
             )}
 
-            {/* Summary */}
-            <div className="cart-summary">
-              <div className="cart-summary-title">Order Summary</div>
-              <div className="cart-summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
-              <div className="cart-summary-row">
-                <span>Delivery</span>
-                <span>{deliveryCharge === 0 ? <span style={{ color: '#4CAF50', fontWeight: 600 }}>FREE</span> : `₹${deliveryCharge}`}</span>
-              </div>
-              <div className="cart-summary-row total"><span>Total</span><span>₹{total}</span></div>
+            {/* ── Items list ── */}
+            <div className="cart-items-wrap">
+              {items.map(item => (
+                <div key={item.productId} className="cart-item-card">
+                  <div className="cart-item-img">
+                    {item.imageUrl
+                      ? <img src={item.imageUrl} alt={item.name} loading="lazy" />
+                      : <div className="cart-item-img-ph">🍽</div>}
+                  </div>
+                  <div className="cart-item-details">
+                    <div className="cart-item-name">{item.name}</div>
+                    <div className="cart-item-unit">₹{item.price} each</div>
+                    <div className="cart-item-row2">
+                      <div className="cart-qty-ctrl">
+                        <button
+                          className="cart-qty-btn"
+                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <span className="cart-qty-num">{item.quantity}</span>
+                        <button
+                          className="cart-qty-btn"
+                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+                      <span className="cart-item-total">₹{item.subtotal}</span>
+                    </div>
+                  </div>
+                  <button
+                    className="cart-item-remove"
+                    onClick={() => removeItem(item.productId)}
+                    title="Remove item"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
             </div>
 
-            {/* Checkout Button */}
-            <div style={{ padding: '0 16px 16px' }}>
-              <button className="cart-checkout-btn" onClick={handleCheckout} id="checkout-btn">
-                Proceed to Checkout →
+            {/* ── Order Note ── */}
+            <div className="cart-tip-row">
+              <Tag size={14} color="#F57C00" />
+              <span>Tip: Order ₹499+ to unlock <strong>free delivery</strong></span>
+            </div>
+
+            {/* ── Summary card ── */}
+            <div className="cart-summary-card">
+              <div className="cart-summary-head">Order Summary</div>
+
+              <div className="cart-summary-line">
+                <span>Items ({itemCount})</span>
+                <span>₹{subtotal}</span>
+              </div>
+              <div className="cart-summary-line">
+                <span>Delivery fee</span>
+                <span className={deliveryCharge === 0 ? 'cart-free-tag' : ''}>
+                  {deliveryCharge === 0 ? '✓ FREE' : `₹${deliveryCharge}`}
+                </span>
+              </div>
+
+              <div className="cart-summary-divider" />
+
+              <div className="cart-summary-line cart-summary-total">
+                <span>Total Payable</span>
+                <span>₹{total}</span>
+              </div>
+            </div>
+
+            {/* ── CTA Buttons ── */}
+            <div className="cart-cta-wrap">
+              <button className="cart-checkout-cta" onClick={handleCheckout} id="checkout-btn">
+                <span>Proceed to Checkout</span>
+                <div className="cart-checkout-cta-price">₹{total}</div>
               </button>
 
-              {/* WhatsApp Order Option */}
               <button
+                className="cart-whatsapp-cta"
                 onClick={() => navigate('/checkout?method=whatsapp')}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#25D366', color: 'white', border: 'none', borderRadius: 999, padding: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 10 }}
               >
-                <MessageCircle size={18} />Order via WhatsApp
+                <MessageCircle size={18} />
+                Order via WhatsApp
               </button>
             </div>
           </>
