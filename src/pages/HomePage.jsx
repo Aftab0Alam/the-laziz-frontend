@@ -6,6 +6,7 @@ import BottomNav from '../components/Layout/BottomNav';
 import HeroSlider from '../components/Slider/HeroSlider';
 import ProductCard from '../components/Product/ProductCard';
 import api from '../utils/api';
+import { getImageUrl } from '../utils/helpers';
 
 /* Hero Slider skeleton — fills space while slides load */
 const HeroSliderSkeleton = () => (
@@ -210,7 +211,7 @@ const HomePage = () => {
                 <div key={cat._id} className="category-card" onClick={() => navigate(`/menu?category=${cat.slug}`)}>
                   <div className="category-img-wrapper">
                     {cat.imageUrl
-                      ? <img src={cat.imageUrl} alt={cat.name} loading="lazy" decoding="async" />
+                      ? <img src={getImageUrl(cat.imageUrl)} alt={cat.name} loading="lazy" decoding="async" />
                       : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🍽</div>
                     }
                   </div>
