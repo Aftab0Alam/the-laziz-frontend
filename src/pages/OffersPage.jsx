@@ -87,17 +87,37 @@ const OffersPage = () => {
   const cartCount = items.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = items.reduce((s, i) => s + i.subtotal, 0);
 
-  const { data: crossSellData, isLoading } = useQuery({
+  const { data: crossSellData, isLoading: csLoading } = useQuery({
     queryKey: ['crossSell'],
     queryFn: () => api.get('/crosssell').then(r => r.data.data.crossSell),
     staleTime: 2 * 60 * 1000,
   });
 
-  const offerProducts = crossSellData?.isActive
+  // Fetch best sellers as fallback when crossSell is not active
+  const { data: bestSellersData, isLoading: bsLoading } = useQuery({
+    queryKey: ['bestSellers'],
+    queryFn: () => api.get('/products?isBestSeller=true&limit=20').then(r => r.data.data.products),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isLoading = csLoading || bsLoading;
+
+  // Decide which products to show — deduplicate by _id
+  const csProducts = crossSellData?.isActive
     ? (crossSellData?.productIds || crossSellData?.products || [])
     : [];
+  const raw = csProducts.length > 0 ? csProducts : (bestSellersData || []);
+  const seen = new Set();
+  const displayProducts = raw.filter(p => {
+    if (seen.has(p._id)) return false;
+    seen.add(p._id);
+    return true;
+  });
 
-  const showOfferSection = isLoading || offerProducts.length > 0;
+  const bannerTitle = crossSellData?.title || "Today's Best Deals";
+  const bannerSubtitle = crossSellData?.subtitle || "Handpicked top sellers — add to cart and save big!";
+  const badgeLabel = crossSellData?.badgeLabel || 'HOT DEALS';
+  const discountLabel = crossSellData?.discountLabel || null;
 
   return (
     <div className="page-wrapper">
@@ -116,21 +136,19 @@ const OffersPage = () => {
             </button>
             <div className="op-live-badge">
               <span className="op-live-dot" />
-              {crossSellData?.badgeLabel || 'HOT DEAL'}
+              {badgeLabel}
             </div>
             <h1 className="op-hero-title-inline">
-              {crossSellData?.discountLabel
-                ? <><span className="op-disc-inline">{crossSellData.discountLabel} OFF</span> — {crossSellData?.title || "Today's Offer"}</>
-                : <>🔥 {crossSellData?.title || "Today's Offer"}</>
+              {discountLabel
+                ? <><span className="op-disc-inline">{discountLabel} OFF</span> — {bannerTitle}</>
+                : <>🔥 {bannerTitle}</>
               }
             </h1>
           </div>
 
           {/* Row 2: subtitle + cart pill */}
           <div className="op-hero-row2">
-            <p className="op-hero-sub-inline">
-              {crossSellData?.subtitle || "Limited time deals — grab them before they're gone!"}
-            </p>
+            <p className="op-hero-sub-inline">{bannerSubtitle}</p>
             {cartCount > 0 && (
               <button className="op-cart-pill-sm" onClick={() => navigate('/cart')}>
                 <ShoppingBag size={13} />
@@ -145,61 +163,40 @@ const OffersPage = () => {
             <span className="op-chip"><Clock size={11} /> Limited Time</span>
             <span className="op-chip"><Star size={11} /> Top Picks</span>
           </div>
-
-          {/* dummy for cart pill compat below */}
-          {cartCount > 0 && (
-            <button style={{display:'none'}} onClick={() => navigate('/cart')}>
-              <ShoppingBag size={15} />
-              <span>{cartCount} item{cartCount !== 1 ? 's' : ''} · ₹{cartTotal}</span>
-              <span className="op-cart-pill-arrow">→</span>
-            </button>
-          )}
         </div>
 
-        {/* ── Offer Products ── */}
-        {showOfferSection ? (
-          <div className="op-products-wrap">
-            <div className="op-products-label">
-              <span className="op-products-label-line" />
-              <span className="op-products-label-text">
-                🎯 {offerProducts.length > 0 ? `${offerProducts.length} Offer Items` : 'Loading Offers...'}
-              </span>
-              <span className="op-products-label-line" />
-            </div>
+        {/* ── Offer Products — always shows real products ── */}
+        <div className="op-products-wrap">
+          <div className="op-products-label">
+            <span className="op-products-label-line" />
+            <span className="op-products-label-text">
+              🏷️ {isLoading ? 'Loading Deals...' : `${displayProducts.length} Offer Items`}
+            </span>
+            <span className="op-products-label-line" />
+          </div>
 
-            <div className="op-grid">
-              {isLoading
-                ? [...Array(4)].map((_, i) => <CardSkeleton key={i} />)
-                : offerProducts.map(p => (
-                    <OfferProductCard key={p._id} product={p} offerPrice={p.offerPrice} />
-                  ))
-              }
-            </div>
+          <div className="op-grid">
+            {isLoading
+              ? [...Array(8)].map((_, i) => <CardSkeleton key={i} />)
+              : displayProducts.map(p => (
+                  <OfferProductCard key={p._id} product={p} offerPrice={p.offerPrice || null} />
+                ))
+            }
+          </div>
 
-            {/* Sticky cart bar */}
-            {cartCount > 0 && (
-              <div className="op-sticky-cart">
-                <div className="op-sticky-cart-info">
-                  <div className="op-sticky-cart-count">{cartCount} item{cartCount !== 1 ? 's' : ''} added</div>
-                  <div className="op-sticky-cart-total">₹{cartTotal} total</div>
-                </div>
-                <button className="op-sticky-cart-btn" onClick={() => navigate('/cart')}>
-                  <ShoppingBag size={16} /> Checkout
-                </button>
+          {/* Sticky cart bar */}
+          {cartCount > 0 && (
+            <div className="op-sticky-cart">
+              <div className="op-sticky-cart-info">
+                <div className="op-sticky-cart-count">{cartCount} item{cartCount !== 1 ? 's' : ''} added</div>
+                <div className="op-sticky-cart-total">₹{cartTotal} total</div>
               </div>
-            )}
-          </div>
-        ) : (
-          /* Empty state */
-          <div className="op-empty">
-            <div className="op-empty-icon">🍽</div>
-            <div className="op-empty-title">No Active Offers</div>
-            <div className="op-empty-sub">Check back soon — exciting deals are on the way!</div>
-            <button className="op-browse-btn" onClick={() => navigate('/menu')}>
-              Browse Full Menu
-            </button>
-          </div>
-        )}
+              <button className="op-sticky-cart-btn" onClick={() => navigate('/cart')}>
+                <ShoppingBag size={16} /> Checkout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       <BottomNav />
     </div>
